@@ -1,0 +1,19 @@
+.DS_Store
+
+# Machine-local Claude Code settings (never commit)
+.claude/settings.local.json
+
+# Writing samples are the principal's own correspondence. They are read during
+# /setup to derive voice.md and they never leave this machine.
+writing-samples/*
+!writing-samples/README.md
+!writing-samples/.gitkeep
+
+# Setup answers contain personal details gathered during the interview.
+.claude/setup/answers.md
+
+# Working files: drafts, briefs, notes, research. Delete these three lines if you
+# want your assistant's output version controlled.
+drafts/
+notes/
+research/

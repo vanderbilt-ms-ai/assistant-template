@@ -1,17 +1,15 @@
 # Vendored: wiki-to-graph
 
 `scripts/` and `reference/` are copied from https://github.com/vanderbilt-ms-ai/wiki-to-graph
-(CC BY-NC-SA 4.0, see LICENSE.md), at commit 7910daa of a branch that
-merges main with these not-yet-merged changes:
+(CC BY-NC-SA 4.0, see LICENSE.md): its main branch plus these changes, which were open pull
+requests there when this copy was taken:
 
 - viewer: draw only nodes joined by a visible edge type (PR 8)
 - viewer: legend lists what the graph contains and explains added types (PR 9)
-- build: page frontmatter kept as node `meta`; `graph.db` stores node meta and edge context;
-  `validate` counts unresolved links
-- viewer: clear selection (button, Esc, empty-space click, empty search); symmetric edge
-  types read from the graph; metadata escaping (from PR 5)
-- update and lint: accept `--vocab`, so add-node, set-kind and lint take this graph's
-  `judgment` kind
+- metadata escaping in the viewer (from PR 5)
+- PR 11: build keeps page frontmatter as node `meta`, `graph.db` stores node meta and edge
+  context, `validate` counts unresolved links; viewer clear selection and symmetric edge
+  types read from the graph; `update` and `lint` accept `--vocab`
 
 `reference/custom-vocabulary.md` has its worked example replaced by a pointer to this repo's
 `kb/vocab.json`, since the example file it named is not copied here.

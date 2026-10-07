@@ -237,7 +237,7 @@ Symmetric edges are stored once with `directed: false`; consumers may add the re
   (opt-in) once we decide weight should mean "strength."
 - *Updated:* the graph is **fully recomputed from the markdown on every `build`** — weights are
   re-derived, never mutated in place. This is a static, authored graph: there is no runtime
-  decay or Hebbian reinforcement (that would be a MangroveMemory-style mechanic, deliberately
+  decay or Hebbian reinforcement (that would be a memory-decay mechanic, deliberately
   out of scope here).
 
 ### 3.3 Section → edge-type map (default, case-insensitive)

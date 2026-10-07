@@ -90,15 +90,9 @@ Pass it to `build`, `validate`, `analyze`, and `query`. `analyze --edges` now de
 
 ## Worked example
 
-[`examples/vocab.custom.json`](../examples/vocab.custom.json) carries the nine knowledge primitives
-and the Biolink-style relation hierarchy used by
-[jarvis](https://github.com/mangrove-one/jarvis) and the Mangrove ecosystem graph:
-
-```bash
-wiki_to_graph.py build  wiki -o g.json --map map.json --vocab examples/vocab.custom.json \
-                        --dag-edges part-of,is-a,requires,derived-from,preceded-by,supersedes
-wiki_to_graph.py analyze g.json --vocab examples/vocab.custom.json
-```
+This assistant's own vocabulary is [`kb/vocab.json`](../../../vocab.json): the four default kinds
+plus `judgment`, and the default edges plus `supersedes`. `kb/kb` passes it, with
+[`kb/map.json`](../../../map.json), to every build, validate, query, update and lint.
 
 ## The viewer
 

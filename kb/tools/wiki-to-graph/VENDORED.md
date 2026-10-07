@@ -13,6 +13,9 @@ merges main with these not-yet-merged changes:
 - update and lint: accept `--vocab`, so add-node, set-kind and lint take this graph's
   `judgment` kind
 
+`reference/custom-vocabulary.md` has its worked example replaced by a pointer to this repo's
+`kb/vocab.json`, since the example file it named is not copied here.
+
 `reference/page-authoring.md` and `reference/maintenance.md` are that repo's wiki-author
 and wiki-graph-maintain skills, kept here as reference reading; the assistant's own skills
 are in `.claude/skills/knowledge-graph*`.

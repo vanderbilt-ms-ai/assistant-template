@@ -19,4 +19,4 @@ A send, post or delete is reported as done only when a tool returned success.
 - [[Ask, do not assert, about other people]] - drafts in the principal's name carry the same care
 
 ## Sources
-- .claude/identity/operating.md - Operating contract, "The hard line: draft, never send"
+- [[Operating contract]] - "The hard line: draft, never send"

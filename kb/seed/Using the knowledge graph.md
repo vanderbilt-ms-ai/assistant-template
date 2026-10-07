@@ -26,4 +26,4 @@ say so: not in the graph is not the same as not true.
 - [[Newest source wins]] - which value to give when two pages disagree
 
 ## Sources
-- .claude/identity/operating.md - Operating contract
+- [[Operating contract]] - the working contract

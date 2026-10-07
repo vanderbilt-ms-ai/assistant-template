@@ -18,6 +18,8 @@ import argparse, json, math, os, re, shutil, subprocess, sys
 from collections import Counter
 
 KB = os.path.dirname(os.path.abspath(__file__))
+REPO = os.path.dirname(KB)
+rel = lambda p: os.path.relpath(p, REPO)
 WIKI = os.path.join(KB, "wiki")
 SEED = os.path.join(KB, "seed")
 BUILD = os.path.join(KB, "build")
@@ -73,7 +75,7 @@ def build(quiet=False):
     if not quiet:
         print(r.stdout.strip())
         print(v.stdout.strip())
-        print("viewer:", os.path.relpath(VIEWER))
+        print("viewer:", rel(VIEWER))
     elif v.returncode != 0:
         # only the failing checks; `kb/kb build` prints the full report
         for line in v.stdout.splitlines():
@@ -127,6 +129,7 @@ def cmd_search(a):
         # title words count three times, so a page about X outranks pages that mention X
         units.append((n, tokens(title) * 3 + tokens(n.get("summary")) * 2 + tokens(body)))
     q = tokens(" ".join(a.text))
+    superseded = {e["target"] for e in g["links"] if e["type"] == "supersedes"}
     N = len(units) or 1
     avg = sum(len(t) for _, t in units) / N
     df = Counter(w for _, t in units for w in set(t))
@@ -136,7 +139,8 @@ def cmd_search(a):
         s = sum(math.log(1 + (N - df[w] + .5) / (df[w] + .5)) * tf[w] * 2.5
                 / (tf[w] + 1.5 * (.25 + .75 * len(t) / (avg or 1))) for w in q if tf[w])
         if s > 0:
-            scored.append((s, n))
+            # a superseded page is history: still found, ranked below what replaced it
+            scored.append((s * (.4 if n["id"] in superseded else 1), n))
     scored.sort(key=lambda x: -x[0])
     if not scored:
         print("nothing in the graph matches. Not in the graph is not the same as not true.")
@@ -144,7 +148,8 @@ def cmd_search(a):
     for s, n in scored[:a.limit]:
         kind = n.get("kind") or n.get("type")
         topics = ", ".join(n.get("topics") or [])
-        print("%-40s [%s]%s" % (n.get("title") or n["id"], kind, ("  " + topics) if topics else ""))
+        old = "  (superseded)" if n["id"] in superseded else ""
+        print("%-40s [%s]%s%s" % (n.get("title") or n["id"], kind, ("  " + topics) if topics else "", old))
         if n.get("summary"):
             print("    " + n["summary"][:200].replace("\n", " "))
 
@@ -171,7 +176,7 @@ def cmd_node(a):
     print("links out (%d):" % len(out)); print("\n".join(out) or "  none")
     print("links in (%d):" % len(inc)); print("\n".join(inc) or "  none")
     if n.get("file"):
-        print("file:", os.path.relpath(os.path.join(WIKI, n["file"])))
+        print("file:", rel(os.path.join(WIKI, n["file"])))
 
 
 def cmd_list(a):
@@ -211,9 +216,10 @@ def cmd_update(a):
     ensure_wiki()
     rc = tool("update", WIKI, *a.rest, "--vocab", VOCAB)
     if rc == 0:
-        rc = build(quiet=True)
-        print("rebuilt: RESULT: PASS" if rc == 0 else
-              "rebuilt with issues above; a new page stays an orphan until a page links to it")
+        # the edit landed; validation issues mid-task (a new page not linked yet) are
+        # reported, and `kb/kb build` is the gate at the end
+        print("rebuilt: RESULT: PASS" if build(quiet=True) == 0 else
+              "rebuilt with the issues above; a new page stays an orphan until a page links to it")
     sys.exit(rc)
 
 
@@ -222,11 +228,17 @@ def cmd_lint(a):
     sys.exit(tool("lint", WIKI, "--vocab", VOCAB))
 
 
+def title(g, nid):
+    for n in g["nodes"]:
+        if n["id"] == nid:
+            return n.get("title") or nid
+    return nid
+
+
 def cmd_health(a):
     g = fresh()
     print("pages:", len(g["nodes"]), " links:", len(g["links"]))
-    r = tool("query", GRAPH, "unexplained", "--vocab", VOCAB, capture=True)
-    print(r.stdout.strip())
+
     cites = {e["source"] for e in g["links"] if e["type"] == "cites"}
     inbound = set()
     for e in g["links"]:
@@ -243,9 +255,13 @@ def cmd_health(a):
     dangling = g.get("meta", {}).get("warnings", {}).get("dangling") or []
     print("links to pages that do not exist (%d): %s" % (
         len(dangling), "; ".join("%s -> %s" % tuple(d) for d in dangling[:20])))
-    unexplained = sum(1 for e in g["links"]
-                      if e["type"] not in ("indexes", "records", "cites", "mentions") and not e.get("context"))
-    problems = len(nosrc) + len(orphans) + len(dangling) + unexplained
+    bare = ["%s -%s-> %s" % (title(g, e["source"]), e["type"], title(g, e["target"])) for e in g["links"]
+            if e["type"] not in ("indexes", "records", "cites", "mentions") and not e.get("context")]
+    print("links with no stated reason (%d): %s" % (len(bare), "; ".join(bare[:20])))
+    # a Sources line that matched no source page becomes a stub source with no page of its own
+    stubs = [n.get("title") or n["id"] for n in g["nodes"] if n.get("type") == "source" and not n.get("file")]
+    print("citations that matched no source page (%d): %s" % (len(stubs), "; ".join(stubs[:20])))
+    problems = len(nosrc) + len(orphans) + len(dangling) + len(bare) + len(stubs)
     print("RESULT: " + ("PASS" if not problems else "%d thing(s) to fix" % problems))
     sys.exit(1 if problems else 0)
 

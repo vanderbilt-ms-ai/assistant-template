@@ -19,4 +19,4 @@ newer version exists.
 - [[A tool result is the only evidence]] - a stale value passed off as current is a fabricated one
 
 ## Sources
-- .claude/identity/operating.md - Operating contract
+- [[Operating contract]] - the working contract

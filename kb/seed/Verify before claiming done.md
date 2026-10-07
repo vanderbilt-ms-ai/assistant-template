@@ -18,4 +18,4 @@ read back with `kb/kb node`.
 - [[A tool result is the only evidence]] - what counts as having checked
 
 ## Sources
-- .claude/identity/operating.md - Operating contract, "How I work with" the principal
+- [[Operating contract]] - "How I work with" the principal

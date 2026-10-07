@@ -316,15 +316,19 @@ here comes from answers already recorded in `.claude/setup/answers.md`.
      on which facts it is canonical for
    - organizations and projects that came up by name (topic `Organizations` or
      `Projects / <lane>`)
-   - a `judgment` page for each hard rule from Phase 3, citing
-     `.claude/identity/operating.md` or `CLAUDE.md`
+   - a `judgment` page for each hard rule from Phase 3 that the seed pages do not
+     already cover (topic `Assistant / Working rules`). Where a seed judgment already
+     says it, such as "Draft, never send", link to that page instead of adding another.
 3. Link every page with a reason: each person to their lane and organization, each
    lane to its systems of record, each judgment to the lane it governs. Add each new
    page under the right heading in `kb/wiki/index.md`.
-   Cite the identity file each fact was written into, using its exact path so the
-   citation links to its seed source page: `.claude/identity/user.md` (Principal
-   profile), `CLAUDE.md` (Standing instructions), `.claude/identity/operating.md`
-   (Operating contract). Never cite `.claude/setup/answers.md`; it may be deleted.
+   Cite the identity file each fact was written into by linking its seed source page:
+   the principal and key people cite `[[Principal profile]]` (`user.md`); lanes,
+   organizations, systems of record and hard rules cite `[[Standing instructions]]`
+   (`CLAUDE.md`); working rules cite `[[Operating contract]]` (`operating.md`). Never
+   cite `.claude/setup/answers.md`; it may be deleted. A system of record named without
+   a path or URL gets the name and place as its locator, marked unconfirmed in its
+   Summary.
 4. Record only what they told you. Where they skipped, leave the page out rather than
    guess. No credentials, account numbers, IDs, or health details.
 5. `kb/kb build` must print `RESULT: PASS`, and `kb/kb health` should show no orphans

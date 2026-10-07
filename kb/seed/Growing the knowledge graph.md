@@ -29,4 +29,4 @@ must print RESULT: PASS. Tell the principal in one line what was added.
 - [[Newest source wins]] - how a newer fact replaces an older one without erasing it
 
 ## Sources
-- .claude/identity/operating.md - Operating contract
+- [[Operating contract]] - the working contract

@@ -18,4 +18,4 @@ the source named, not the assistant's reading of them.
 - [[Growing the knowledge graph]] - people pages hold sourced facts, not impressions
 
 ## Sources
-- .claude/identity/operating.md - Operating contract
+- [[Operating contract]] - the working contract

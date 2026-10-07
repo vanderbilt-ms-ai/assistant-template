@@ -51,7 +51,7 @@ The substance. Every date, number and status names the source it came from.
 - [[Older Page]] - what this replaces and since when (only when it replaces something)
 
 ## Sources
-- path/or/URL - what it is, and where in it
+- [[Source page title]] - where in it (section, page, sheet, date)
 ```
 
 Delete any section you leave empty (`add-node` creates them all as stubs). A source page
@@ -59,9 +59,17 @@ has frontmatter `type: source` and a `locator:` instead of `kind:`, a Summary sa
 the document is and which facts it is the record for, and Related links; it needs no
 Sources section of its own.
 
-A `## Sources` bullet whose path or URL is exactly a source page's `locator` becomes a
-`cites` link to that source page. Any other bullet is a plain citation with no link, so
-copy the locator character for character.
+Cite a source by linking its source page in `## Sources`, as above; that link becomes the
+`cites` edge. Create the source page first (`add-source`). A bare path or URL in Sources
+links only when it is a single token equal to a source page's locator, and anything that
+matches nothing becomes a stub that `kb/kb health` reports, so prefer the link.
+
+A link's reason needs a few words, not one ("the company Dana runs", not "CEO"); a
+one-word reason is reported as no reason.
+
+Topics: `People`, `Organizations`, `Lanes`, `Projects / <lane>`, and
+`Assistant / Working rules` for judgment pages, so `kb/kb list --topic` finds them
+together. A source page takes the topic of what it is the record for.
 
 What a page is about (a person, a company) is its `topics:`, not a new kind. How two pages
 connect is the reason written after the link. One link per bullet, the page the bullet is
@@ -78,8 +86,10 @@ Pages are plain ASCII. The full authoring guide is
    kb/kb update add-source --title "<short name>" --locator <path or URL> --medium <document|email|spreadsheet|web|slides|...> --date <YYYY-MM-DD> --topics "<topic>"
    ```
    Give `--medium` (the default guesses from the extension, and calls every PDF a paper).
-   Give `--date` only when the document's own date is known; leave it out otherwise. Then
-   write the source page's Summary.
+   Give `--date` when the document has a date (its own, or the date it was approved or
+   signed, said which in the Summary); leave it out otherwise. The locator is the real
+   path or URL; when only a name and a place are known, use them as the locator and say
+   in the Summary that the exact location is unconfirmed. Then write the Summary.
 3. Then the pages it supports:
    ```bash
    kb/kb update add-node --title "<Title>" --kind fact --topics "People" --summary "<one or two sentences>"
@@ -93,9 +103,12 @@ Pages are plain ASCII. The full authoring guide is
    `Organizations`, `Lanes`, `Projects`, `Sources`, `Standing rules`). Create the heading
    if it does not exist yet. Link targets must exist before the build, so create a page
    before writing links to it.
-6. When a fact changes, do not overwrite the old value silently. Write the new value, keep
-   the old one marked "(superseded <date>, was ...)", or for a replaced document add a
-   `## Supersedes` section on the new page.
+6. When a fact changes, do not overwrite the old value silently. On a fact page, write the
+   new value and keep the old one marked "(superseded <date>, was ...)". When a document
+   replaces another: add its source page, give it a `## Supersedes` section linking the
+   old one with the date, add "Superseded by [[New]] on <date>." to the old page's
+   Summary, point the pages that cite the old one at the new one, and mark the old one's
+   index bullet "(superseded <date>)". Search ranks superseded pages below current ones.
 7. `kb/kb build` must print `RESULT: PASS`, and `kb/kb health` should too. Then
    `kb/kb node "<Title>"` to read it back.
 8. Tell the principal in one line what was added or changed.
@@ -118,12 +131,16 @@ same turn:
 ## Other edits
 
 ```bash
-kb/kb update rename --node "<Old>" --title "<New>"    # rewrites every link to it
+kb/kb update rename --node "<Old>" --title "<New>"    # rewrites every link to it; prose mentions are not touched
 kb/kb update add-edge --from "<A>" --to "<B>" --type related
 kb/kb update remove-node --node "<Title>"
 kb/kb update set-kind --node "<Title>" --kind judgment
 kb/kb update set-topics --node "<Title>" --topics "People"
 ```
+
+A `supersedes` link is written as a `## Supersedes` section on the newer page; `add-edge`
+does not make one. Edits that pass the update but leave the graph failing validation
+(a new page not linked yet) still exit 0; `kb/kb build` is the gate.
 
 ## Health check
 

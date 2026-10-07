@@ -18,4 +18,4 @@ and a page's claim is only as strong as the source it cites.
 - [[Verify before claiming done]] - the same rule applied to the assistant's own work
 
 ## Sources
-- .claude/identity/operating.md - Operating contract, "My tools"
+- [[Operating contract]] - "My tools"

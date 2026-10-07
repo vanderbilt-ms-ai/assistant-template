@@ -113,6 +113,15 @@ Pages are plain ASCII. The full authoring guide is
    `kb/kb node "<Title>"` to read it back.
 8. Tell the principal in one line what was added or changed.
 
+## The daily update
+
+The `knowledge-graph-daily` routine (`.claude/routines/knowledge-graph-daily.md`) runs
+this skill unattended once a day over everything since its last successful run:
+`kb/kb recent` writes a digest of the sessions, auto-memory changes, commits and changed
+files, and the routine turns what is durable into pages, logs them in `kb/wiki/log.md`,
+and reports in `notes/kb-updates/`. Adding a page in the session where you learn
+something is still right; the routine catches what a session missed.
+
 ## Corrections become judgments
 
 When the principal corrects the assistant on something that will come up again, in the

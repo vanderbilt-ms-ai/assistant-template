@@ -19,3 +19,4 @@ graph, its database and its viewer are rebuilt from them by `kb/kb build`.
 - [[Operating contract]] - the identity file the standing rules come from
 - [[Principal profile]] - who the principal is; people pages cite it
 - [[Standing instructions]] - lanes, hard rules, platforms, systems of record
+- [[Session transcripts]] - working sessions in this repo; the daily update reads them

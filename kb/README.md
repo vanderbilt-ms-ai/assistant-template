@@ -9,6 +9,7 @@
 - `vocab.json` - node kinds and edge types (the wiki-to-graph defaults plus `judgment`
   and `supersedes`).
 - `map.json` - which page section produces which edge type.
+- `state/` - when the daily update last succeeded (gitignored); `kb/kb recent` starts there.
 - `kb` / `kb.py` - the command. `kb/kb --help` lists everything.
 - `tools/wiki-to-graph/` - the vendored build, query and viewer tool. See `VENDORED.md`.
 

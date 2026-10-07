@@ -102,6 +102,16 @@ derived.
 - **The viewer is private.** Served on 127.0.0.1 only (`knowledge-graph` in
   `.claude/launch.json`), never published or uploaded.
 
+## Routines
+
+Scheduled runs of this assistant. Each one's instructions are in
+`.claude/routines/<id>.md`; it runs unattended, so it drafts and writes files and never
+sends. `/setup routines` adds, retimes or removes them.
+
+- **knowledge-graph-daily**: turns the last day of sessions, memory and file changes
+  into graph pages; report in `notes/kb-updates/`. Prompt:
+  `.claude/routines/knowledge-graph-daily.md`. Not scheduled until `/setup` runs.
+
 ## Domain notes
 
 {{DOMAIN_NOTES}}

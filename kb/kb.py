@@ -13,9 +13,12 @@ and is recomputed by `build`. Python standard library only.
     kb/kb lint                       what build will normalize, links with no stated reason
     kb/kb health                     orphans, pages with no source, unexplained links
     kb/kb view [--open]              current viewer; prints its path
+    kb/kb recent [--hours N] [--done]  digest of activity since the last graph update
+    kb/kb checkpoint | rollback      save / restore kb/wiki around an unattended update
 """
-import argparse, json, math, os, re, shutil, subprocess, sys
+import argparse, glob, json, math, os, re, shutil, subprocess, sys, time
 from collections import Counter
+from datetime import datetime, timedelta, timezone
 
 KB = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(KB)
@@ -29,6 +32,11 @@ VOCAB = os.path.join(KB, "vocab.json")
 MAP = os.path.join(KB, "map.json")
 SCRIPTS = os.path.join(KB, "tools", "wiki-to-graph", "scripts")
 TOOL = os.path.join(SCRIPTS, "wiki_to_graph.py")
+STATE = os.path.join(KB, "state", "last-update.json")
+CHECKPOINT = os.path.join(BUILD, "checkpoint")
+# The daily routine's prompt starts with this; its own past sessions are left out of the digest.
+ROUTINE_MARK = "[kb-daily-update]"
+CLAUDE_PROJECTS = os.path.join(os.path.expanduser(os.environ.get("CLAUDE_CONFIG_DIR", "~/.claude")), "projects")
 
 
 def tool(*args, capture=False):
@@ -279,6 +287,150 @@ def cmd_view(a):
         subprocess.run([opener, VIEWER])
 
 
+# ---- the daily update routine ----------------------------------------------------------------
+
+SECRET = re.compile(r"(?i)(sk-[a-z0-9_-]{16,}|ghp_[a-z0-9]{20,}|xox[abpr]-[a-z0-9-]{10,}|"
+                    r"(?:api[_-]?key|token|secret|password)\s*[:=]\s*\S+|\b(?:\d[ -]?){13,19}\b)")
+
+
+def clean(s, limit):
+    s = re.sub(r"<system-reminder>.*?</system-reminder>", "", s or "", flags=re.S)
+    s = SECRET.sub("[redacted]", s).strip()
+    return s if len(s) <= limit else s[:limit] + " [...]"
+
+
+def text_of(content):
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return "\n".join(b.get("text", "") for b in content
+                         if isinstance(b, dict) and b.get("type") == "text")
+    return ""
+
+
+def window_start(hours):
+    if hours is None and os.path.exists(STATE):
+        try:
+            last = datetime.fromisoformat(json.load(open(STATE))["last_success"])
+            # never reach back further than a week, even after a long gap
+            return max(last, datetime.now(timezone.utc) - timedelta(days=7))
+        except (ValueError, KeyError):
+            pass
+    return datetime.now(timezone.utc) - timedelta(hours=hours or 24)
+
+
+def sessions(since):
+    """Turns from every Claude Code session run in this repo (or a worktree of it) since `since`."""
+    out = []
+    for f in glob.glob(os.path.join(CLAUDE_PROJECTS, "*", "*.jsonl")):
+        if os.path.getmtime(f) < since.timestamp():
+            continue
+        turns, routine = [], False
+        for line in open(f, encoding="utf-8", errors="replace"):
+            try:
+                d = json.loads(line)
+            except ValueError:
+                continue
+            if d.get("type") not in ("user", "assistant") or d.get("isMeta") or d.get("isSidechain"):
+                continue
+            if not (d.get("cwd") or "").startswith(REPO):
+                continue
+            body = text_of((d.get("message") or {}).get("content"))
+            if not turns and d["type"] == "user" and ROUTINE_MARK in body:
+                routine = True
+                break
+            ts = d.get("timestamp")
+            if not ts or not body.strip():
+                continue
+            if datetime.fromisoformat(ts.replace("Z", "+00:00")) < since:
+                continue
+            who = "PRINCIPAL" if d["type"] == "user" else "ASSISTANT"
+            turns.append("**%s** (%s): %s" % (who, ts[:16].replace("T", " "),
+                                            clean(body, 2500 if who == "PRINCIPAL" else 1200)))
+        if turns and not routine:
+            out.append((os.path.basename(f), turns))
+    return out
+
+
+def memories(since):
+    """Claude Code auto-memory files for this repo's project folders changed since `since`."""
+    enc = re.sub(r"[^A-Za-z0-9]", "-", REPO)
+    out = []
+    for d in glob.glob(os.path.join(CLAUDE_PROJECTS, enc + "*", "memory")):
+        for f in sorted(glob.glob(os.path.join(d, "*.md"))):
+            if os.path.getmtime(f) >= since.timestamp() and os.path.basename(f) != "MEMORY.md":
+                out.append((f, clean(open(f, encoding="utf-8", errors="replace").read(), 3000)))
+    return out
+
+
+SKIP_DIRS = {"kb", "node_modules", "venv", "__pycache__", "build", "dist", "writing-samples"}
+
+
+def repo_changes(since):
+    """Commits, and files changed on disk outside kb/ (gitignored drafts and notes included)."""
+    log = subprocess.run(["git", "-C", REPO, "log", "--since", since.isoformat(), "--stat",
+                          "--format=%h %ad %s", "--date=short"], capture_output=True, text=True).stdout
+    changed = []
+    for root, dirs, files in os.walk(REPO):
+        # hidden folders, dependencies and build output say nothing about what was learned
+        dirs[:] = [x for x in dirs if x not in SKIP_DIRS and (not x.startswith(".") or x == ".claude")
+                   and not (root == os.path.join(REPO, ".claude") and x == "worktrees")
+                   # another git repository nested in here is its own project
+                   and not os.path.exists(os.path.join(root, x, ".git"))]
+        for f in files:
+            p = os.path.join(root, f)
+            try:
+                if os.path.getmtime(p) >= since.timestamp():
+                    changed.append(rel(p))
+            except OSError:
+                pass
+    return log.strip(), sorted(changed)
+
+
+def cmd_recent(a):
+    if a.done:
+        os.makedirs(os.path.dirname(STATE), exist_ok=True)
+        json.dump({"last_success": datetime.now(timezone.utc).isoformat()}, open(STATE, "w"))
+        print("recorded a successful graph update at", datetime.now().strftime("%Y-%m-%d %H:%M"))
+        return
+    since = window_start(a.hours)
+    ss, mm, (log, changed) = sessions(since), memories(since), repo_changes(since)
+    lines = ["# Activity since %s (UTC)" % since.strftime("%Y-%m-%d %H:%M"), "",
+             "Sessions: %d. Memory files changed: %d. Files changed outside kb/: %d." % (
+                 len(ss), len(mm), len(changed)), ""]
+    for name, turns in ss:
+        lines += ["## Session %s" % name, ""] + [t + "\n" for t in turns]
+    for path, body in mm:
+        lines += ["## Memory file %s" % path, "", body, ""]
+    if log:
+        lines += ["## Commits", "", "```", log, "```", ""]
+    if changed:
+        lines += ["## Files changed", ""] + ["- " + c for c in changed[:200]] + [""]
+    os.makedirs(os.path.join(BUILD, "recent"), exist_ok=True)
+    out = os.path.join(BUILD, "recent", datetime.now().strftime("%Y-%m-%d-%H%M") + ".md")
+    open(out, "w", encoding="utf-8").write("\n".join(lines))
+    print("digest:", rel(out))
+    print("sessions %d, memory files %d, files changed %d" % (len(ss), len(mm), len(changed)))
+    if not (ss or mm or log or changed):
+        print("nothing new since the last update")
+
+
+def cmd_checkpoint(a):
+    ensure_wiki()
+    shutil.rmtree(CHECKPOINT, ignore_errors=True)
+    shutil.copytree(WIKI, CHECKPOINT)
+    print("checkpoint of kb/wiki saved")
+
+
+def cmd_rollback(a):
+    if not os.path.isdir(CHECKPOINT):
+        print("no checkpoint to roll back to"); sys.exit(1)
+    shutil.rmtree(WIKI, ignore_errors=True)
+    shutil.copytree(CHECKPOINT, WIKI)
+    print("kb/wiki restored from the checkpoint")
+    sys.exit(build())
+
+
 def main():
     ap = argparse.ArgumentParser(prog="kb", description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -296,6 +448,11 @@ def main():
     sp.add_parser("lint").set_defaults(f=cmd_lint)
     sp.add_parser("health").set_defaults(f=cmd_health)
     p = sp.add_parser("view"); p.add_argument("--open", action="store_true"); p.set_defaults(f=cmd_view)
+    p = sp.add_parser("recent"); p.add_argument("--hours", type=float)
+    p.add_argument("--done", action="store_true", help="record that the update succeeded")
+    p.set_defaults(f=cmd_recent)
+    sp.add_parser("checkpoint").set_defaults(f=cmd_checkpoint)
+    sp.add_parser("rollback").set_defaults(f=cmd_rollback)
     # update and query pass their arguments straight to the graph tool; argparse would
     # otherwise claim leading options such as --help or --edges for itself
     if len(sys.argv) > 1 and sys.argv[1] in ("update", "query"):

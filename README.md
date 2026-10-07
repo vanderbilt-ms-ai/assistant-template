@@ -117,6 +117,19 @@ tool in `kb/tools/wiki-to-graph/` is vendored from
 [wiki-to-graph](https://github.com/vanderbilt-ms-ai/wiki-to-graph); see its
 `VENDORED.md`.
 
+## Routines
+
+Setup also creates scheduled routines: recurring work the assistant does without being
+asked, such as a morning brief or a weekly review, chosen from a few questions about
+what would actually save you time. Each routine's instructions are a file in
+`.claude/routines/`, and every routine drafts and writes files; none of them sends.
+
+Every setup gets one routine of the assistant's own, `knowledge-graph-daily`. Once a
+day it reads what happened since its last run (the session transcripts in this repo,
+the assistant's memory files, commits and changed files), adds what is durable to the
+knowledge graph, and leaves a short report in `notes/kb-updates/`. If the graph does
+not build cleanly afterwards, it rolls back its own changes.
+
 ## After setup
 
 The first three corrections you give it are worth more than the whole interview.

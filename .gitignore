@@ -17,3 +17,10 @@ writing-samples/*
 drafts/
 notes/
 research/
+
+# Knowledge graph. kb/build/ is derived from the pages and rebuilt by `kb/kb build`.
+kb/build/
+# kb/wiki/ holds what the assistant learns about you and the people you work with. It
+# starts as a copy of kb/seed/ on the first `kb/kb` run. Delete this line if your repo is
+# private and you want the graph version controlled (recommended once it is private).
+kb/wiki/

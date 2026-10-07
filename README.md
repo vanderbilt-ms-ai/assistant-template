@@ -6,9 +6,10 @@ twenty minutes. What comes out is an assistant with a named identity, a written
 contract about what it may and may not do, and a style guide derived from your own
 writing so it can draft in your voice.
 
-This is not an agent framework and it does not ship any code. It is a set of
-standing instructions, structured so that the parts that generalize stay put and
-the parts that are about you get filled in.
+This is not an agent framework. It is a set of standing instructions, structured so
+that the parts that generalize stay put and the parts that are about you get filled
+in, plus one small tool: a knowledge graph the assistant searches before it answers
+and adds to as it learns.
 
 ## Quickstart
 
@@ -42,6 +43,8 @@ CLAUDE.md                        standing rules, loaded every session
 .claude/commands/setup.md        the guided setup interview
 .claude/claude-md-guide.md       how to keep CLAUDE.md from rotting
 writing-samples/                 your own sent writing (gitignored)
+kb/                              the knowledge graph: pages, the kb command, the viewer
+.claude/skills/knowledge-graph*/ how the assistant searches and grows the graph
 ```
 
 Everything in `{{DOUBLE_BRACES}}` is a placeholder. When setup is done, this
@@ -85,6 +88,34 @@ dogma, but each one exists because the failure it prevents is expensive.
   not papered over with a plausible number.
 - **Verify before claiming done.** A structural check is not proof.
 - **The assistant updates its own files when corrected**, and tells you it did.
+
+## The knowledge graph
+
+The assistant's long-term memory is a graph of markdown pages in `kb/wiki/`: the
+people, organizations, projects and lanes in your life, the decisions made about
+them, the documents that are the source of record for each fact, and the standing
+rules it has learned from your corrections. Each page links to others with a stated
+reason, and `kb/kb build` turns the pages into a typed graph, a SQLite database and an
+interactive viewer. It needs only Python 3, nothing to install.
+
+It works out of the box: the first `kb/kb` command copies the seed pages in `kb/seed/`
+into `kb/wiki/`, and `/setup` adds what the interview learned. After that the
+assistant searches it before answering about anyone or anything in it, and writes new
+facts, decisions and corrections back in the same turn (see `CLAUDE.md`).
+
+```bash
+kb/kb search <words>        # ranked search over every page
+kb/kb node <title>          # one page with its links and their reasons
+kb/kb query path "<A>" "<B>"  # how two things connect
+kb/kb health                # orphans, unsourced pages, unexplained links
+kb/kb view --open           # the interactive map
+```
+
+`kb/wiki/` is gitignored by default because it holds personal details. If your copy of
+this repo is private, delete that line in `.gitignore` to version the graph. The graph
+tool in `kb/tools/wiki-to-graph/` is vendored from
+[wiki-to-graph](https://github.com/vanderbilt-ms-ai/wiki-to-graph); see its
+`VENDORED.md`.
 
 ## After setup
 

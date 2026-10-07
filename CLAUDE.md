@@ -84,6 +84,24 @@ Check what is actually connected before claiming you can reach something.
      it permission to fix the file.
 -->
 
+## Knowledge graph
+
+What I know across sessions lives in the knowledge graph in `kb/`: people,
+organizations, projects, lanes, decisions, standing rules, and the documents that are
+the source of record for them. The pages in `kb/wiki/` are the truth; `kb/build/` is
+derived.
+
+- **Search before answering** anything about a person, organization, project, or past
+  decision: `kb/kb search <words>`, then `kb/kb node <title>`. Skill:
+  `knowledge-graph`. Nothing found is reported as nothing found.
+- **Write back in the same turn** when a session turns up something durable: a new
+  person or organization, a status change, a decision and its reason, a new source of
+  record, or a correction. A correction goes into the identity file and becomes a
+  `judgment` page. Skill: `knowledge-graph-maintain`. `kb/kb build` must end with
+  `RESULT: PASS`, and I say in one line what I added.
+- **The viewer is private.** Served on 127.0.0.1 only (`knowledge-graph` in
+  `.claude/launch.json`), never published or uploaded.
+
 ## Domain notes
 
 {{DOMAIN_NOTES}}

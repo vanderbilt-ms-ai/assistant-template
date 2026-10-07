@@ -20,6 +20,7 @@ CLAUDE.md                        standing rules, lanes, platforms, domain notes
 .claude/identity/operating.md    what you must and must not do
 .claude/identity/user.md         who they are
 .claude/identity/voice.md        how they write, so you can draft as them
+kb/wiki/                         the knowledge graph: people, lanes, sources, rules
 ```
 
 Worked examples of all six, filled in for a fictional person, are in
@@ -56,8 +57,12 @@ your principal.
 - `voice`: re-run Phase 5 only, against new samples. Use this when a fresh batch
   of writing arrives.
 - `platforms`: re-run Phase 6 only. Use this when a connector is added or dies.
+- `graph`: re-run Phase 8 only, against the current answers. Use this to reseed
+  the knowledge graph after the identity files change.
 - `review`: run no interview. Read every identity file, check them against
   `.claude/setup/answers.md`, and report what is thin, stale, or contradictory.
+  Also run `kb/kb health` and report orphans, unsourced pages, and judgments in
+  `operating.md` that have no page in the graph (or the reverse).
 
 ---
 
@@ -291,7 +296,47 @@ Fills: `DOMAIN_NOTES`.
 
 ---
 
-## Phase 8 - Write, verify, report
+## Phase 8 - Seed the knowledge graph
+
+The assistant ships with a working knowledge graph in `kb/` (see the
+`knowledge-graph` and `knowledge-graph-maintain` skills). It starts with a few pages
+about how the assistant works. This phase adds what the interview taught you, so the
+first real session already knows who and what matters. Ask nothing new: everything
+here comes from answers already recorded in `.claude/setup/answers.md`.
+
+1. `kb/kb build`. On a fresh clone this copies `kb/seed/` into `kb/wiki/` and must
+   print `RESULT: PASS`.
+2. Add pages, following the page contract in the `knowledge-graph-maintain` skill:
+   - the principal (topic `People`): roles, timezone, how to address them
+   - one page per lane (topic `Lanes`): what lands there, what does not and where it
+     lives instead, who is downstream
+   - one page per key person from Phase 2 (topic `People`): role and the one clause
+     of context they gave, and the lane they belong to
+   - one source page per system of record from Phase 7, with its locator, and a line
+     on which facts it is canonical for
+   - organizations and projects that came up by name (topic `Organizations` or
+     `Projects / <lane>`)
+   - a `judgment` page for each hard rule from Phase 3, citing
+     `.claude/identity/operating.md` or `CLAUDE.md`
+3. Link every page with a reason: each person to their lane and organization, each
+   lane to its systems of record, each judgment to the lane it governs. Add each new
+   page under the right heading in `kb/wiki/index.md`.
+   Cite the identity file each fact was written into (for example
+   `.claude/identity/user.md`), not `.claude/setup/answers.md`, which may be deleted.
+4. Record only what they told you. Where they skipped, leave the page out rather than
+   guess. No credentials, account numbers, IDs, or health details.
+5. `kb/kb build` must print `RESULT: PASS`, and `kb/kb health` should show no orphans
+   and no page without a source. Then show them the graph: in the desktop app, start
+   the `knowledge-graph` preview from `.claude/launch.json`; in a terminal,
+   `kb/kb view --open`. Tell them in two lines what is in it and that it grows as
+   they work.
+6. Ask whether their copy of this repo is private. If it is, offer to delete the
+   `kb/wiki/` line from `.gitignore` so the graph is version controlled. If it is
+   public, keep the line; the graph holds personal details.
+
+---
+
+## Phase 9 - Write, verify, report
 
 1. Write all six files.
 
@@ -339,7 +384,7 @@ LC_ALL=C grep -n '[^ -~]' CLAUDE.md .claude/identity/*.md
 
 ---
 
-## Phase 9 - The standing invitation
+## Phase 10 - The standing invitation
 
 Last message. Tell them the identity files are meant to be edited, that the
 assistant is expected to update them when corrected, and that the fastest way to

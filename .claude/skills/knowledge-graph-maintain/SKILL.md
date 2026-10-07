@@ -83,7 +83,7 @@ Pages are plain ASCII. The full authoring guide is
    near duplicate. Same person under two spellings is one page.
 2. A document comes in as a source page first:
    ```bash
-   kb/kb update add-source --title "<short name>" --locator <path or URL> --medium <document|email|spreadsheet|web|slides|...> --date <YYYY-MM-DD> --topics "<topic>"
+   kb/kb update add-source --title "<short name>" --locator <path or URL> --medium <document|email|spreadsheet|web|slides|...> --date <YYYY-MM-DD> --topics "<topic>" --summary "<what it is>"
    ```
    Give `--medium` (the default guesses from the extension, and calls every PDF a paper).
    Give `--date` when the document has a date (its own, or the date it was approved or
@@ -94,7 +94,7 @@ Pages are plain ASCII. The full authoring guide is
    ```bash
    kb/kb update add-node --title "<Title>" --kind fact --topics "People" --summary "<one or two sentences>"
    ```
-4. Open the new page and write the Explanation, Related (with reasons) and Sources. Writing
+4. Open the new page (`kb/wiki/<Title>.md`; rewriting the whole stub is fine) and write the Explanation, Related (with reasons) and Sources. Writing
    links straight into the markdown is usually easier than `add-edge`, which writes a bare
    link you then give a reason. A `related` link on the new page counts both ways, so
    linking it to an existing page is enough to stop it being an orphan; until then the
@@ -125,7 +125,8 @@ something is still right; the routine catches what a session missed.
 ## Corrections become judgments
 
 When the principal corrects the assistant on something that will come up again, in the
-same turn:
+same turn (an unattended routine never edits identity files; it proposes the rule in its
+report instead):
 
 1. Write the rule into the right identity file, usually `.claude/identity/operating.md`,
    as a bullet in the section it governs (tools, drafting, how to work with them). If no

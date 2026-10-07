@@ -20,6 +20,8 @@ CLAUDE.md                        standing rules, lanes, platforms, domain notes
 .claude/identity/operating.md    what you must and must not do
 .claude/identity/user.md         who they are
 .claude/identity/voice.md        how they write, so you can draft as them
+kb/wiki/                         the knowledge graph: people, lanes, sources, rules
+.claude/routines/                the prompts for scheduled routines
 ```
 
 Worked examples of all six, filled in for a fictional person, are in
@@ -56,8 +58,13 @@ your principal.
 - `voice`: re-run Phase 5 only, against new samples. Use this when a fresh batch
   of writing arrives.
 - `platforms`: re-run Phase 6 only. Use this when a connector is added or dies.
+- `graph`: re-run Phase 9 only, against the current answers. Use this to reseed
+  the knowledge graph after the identity files change.
+- `routines`: re-run Phase 10 only. Use this to add, retime or remove routines.
 - `review`: run no interview. Read every identity file, check them against
   `.claude/setup/answers.md`, and report what is thin, stale, or contradictory.
+  Also run `kb/kb health` and report orphans, unsourced pages, and judgments in
+  `operating.md` that have no page in the graph (or the reverse).
 
 ---
 
@@ -72,10 +79,11 @@ Before you ask anything:
 4. Check the current date and the system timezone.
 5. `ls writing-samples/` to see whether writing samples are already there.
 6. Check which connectors and tools this session actually has. Do not guess from
-   tool names alone; note what is present and what is absent.
+   tool names alone; note what is present and what is absent. Note
+   whether scheduled tasks can be created here (Phase 10 needs it).
 
-Then tell them, in about five lines: what setup will produce, that it takes
-roughly twenty minutes, that Phase 5 needs them to paste or point at real writing
+Then tell them, in about five lines: what setup will produce (identity files, a knowledge graph,
+and scheduled routines), that it takes roughly thirty minutes, that Phase 5 needs them to paste or point at real writing
 they have sent, and that they can stop anywhere and resume with `/setup resume`.
 
 Then go straight into Phase 1. Do not wait for permission to begin.
@@ -291,7 +299,7 @@ Fills: `DOMAIN_NOTES`.
 
 ---
 
-## Phase 8 - Write, verify, report
+## Phase 8 - Write and verify the identity files
 
 1. Write all six files.
 
@@ -325,7 +333,122 @@ LC_ALL=C grep -n '[^ -~]' CLAUDE.md .claude/identity/*.md
 6. Write `.claude/setup/answers.md` with every confirmed answer, so a later
    `/setup review` has something to check against.
 
-7. Tell them what to do next, in a few lines:
+---
+
+## Phase 9 - Seed the knowledge graph
+
+The assistant ships with a working knowledge graph in `kb/` (see the
+`knowledge-graph` and `knowledge-graph-maintain` skills). It starts with a few pages
+about how the assistant works. This phase adds what the interview taught you, so the
+first real session already knows who and what matters. Ask nothing new: everything
+here comes from answers already recorded in `.claude/setup/answers.md`.
+
+1. `kb/kb build`. On a fresh clone this copies `kb/seed/` into `kb/wiki/` and must
+   print `RESULT: PASS`.
+2. Add pages, following the page contract in the `knowledge-graph-maintain` skill:
+   - the principal (topic `People`): roles, timezone, how to address them
+   - one page per lane (topic `Lanes`): what lands there, what does not and where it
+     lives instead, who is downstream
+   - one page per key person from Phase 2 (topic `People`): role and the one clause
+     of context they gave, and the lane they belong to
+   - one source page per system of record from Phase 7, with its locator, and a line
+     on which facts it is canonical for
+   - organizations and projects that came up by name (topic `Organizations` or
+     `Projects / <lane>`)
+   - a `judgment` page for each hard rule from Phase 3 that the seed pages do not
+     already cover (topic `Assistant / Working rules`). Where a seed judgment already
+     says it, such as "Draft, never send", link to that page instead of adding another.
+3. Link every page with a reason: each person to their lane and organization, each
+   lane to its systems of record, each judgment to the lane it governs. Add each new
+   page under the right heading in `kb/wiki/index.md`.
+   Cite the identity file each fact was written into by linking its seed source page:
+   the principal and key people cite `[[Principal profile]]` (`user.md`); lanes,
+   organizations, systems of record and hard rules cite `[[Standing instructions]]`
+   (`CLAUDE.md`); working rules cite `[[Operating contract]]` (`operating.md`). Never
+   cite `.claude/setup/answers.md`; it may be deleted. A system of record named without
+   a path or URL gets the name and place as its locator, marked unconfirmed in its
+   Summary.
+4. Record only what they told you. Where they skipped, leave the page out rather than
+   guess. No credentials, account numbers, IDs, or health details.
+5. `kb/kb build` must print `RESULT: PASS`, and `kb/kb health` should show no orphans
+   and no page without a source. Then show them the graph: in the desktop app, start
+   the `knowledge-graph` preview from `.claude/launch.json`; in a terminal,
+   `kb/kb view --open`. Tell them in two lines what is in it and that it grows as
+   they work.
+6. Ask whether their copy of this repo is private. If it is, offer to delete the
+   `kb/wiki/` line from `.gitignore` so the graph is version controlled. If it is
+   public, keep the line; the graph holds personal details.
+
+---
+
+## Phase 10 - Routines
+
+A routine is a scheduled run of this assistant that does recurring work without being
+asked. Every setup gets one: `knowledge-graph-daily`, which turns the last day of
+sessions, memory and file changes into graph pages. Then add the ones the principal
+needs.
+
+First find out, without asking, how routines can run here, and note it:
+
+- **Desktop app scheduled tasks** (a `create_scheduled_task` tool is present). They run
+  on this machine while the app is open, and a missed run fires at the next launch.
+  They can read local files and session transcripts. Prefer these.
+- **Cloud routines** (`/schedule`). They run on a cloud checkout of the repo, so they
+  cannot see this machine's session transcripts or gitignored files. Never use them for
+  the graph update; they suit work that only needs connectors.
+- **Neither:** a launchd job (macOS) or cron entry that runs `claude -p` in this
+  directory. Write the job file, show it, and install it only on a yes.
+
+Then ask, in one message:
+
+1. What recurring work would save them time? Propose three to five concrete routines
+   drawn from their lanes, platforms and annoyances, not a generic list. For example: a
+   morning brief (today's calendar, replies owed as drafts, deadlines this week), a
+   weekly review, a nudge when a thread they care about goes quiet, or a lane-specific
+   one such as a grading-window reminder or a monthly update drafted from the month's
+   notes. Ask which to keep and what is missing.
+2. When each should run: days and time, in their timezone. Propose defaults. Space
+   routines at least ten minutes apart, and put `knowledge-graph-daily` first so the
+   others read a current graph.
+3. Where results go: a file under `notes/` (default), a draft to themselves, or both.
+4. Anything a routine must never touch or read, even as a draft.
+
+Rules for every routine:
+
+- **It runs unattended.** It cannot ask a question, and a permission prompt nobody
+  answers stalls it silently. Check how the scheduler sets permissions for the task:
+  file edits inside this repo must not prompt, and every command it runs must be
+  allowed in `.claude/settings.json`. Allow only what that routine needs; nothing
+  outward-facing is ever allowed.
+- **Draft, never send, with no exceptions.** No sends, posts, deletes, accepted invites
+  or purchases. Output is files and drafts.
+- **One prompt, one place.** Each routine's instructions live in
+  `.claude/routines/<id>.md` and are self-contained, because every run starts with no
+  memory: what it reads, what it writes, its hard limits, and the shape of its output,
+  with `knowledge-graph-daily.md` as the model. The scheduled task's own prompt is one
+  line: `In <absolute path of this repo>, read and follow .claude/routines/<id>.md.`
+- **What a routine learns goes in the graph.** It adds pages through the
+  `knowledge-graph-maintain` skill, or leaves its session for the next daily update.
+
+Then:
+
+1. Show the list: id, schedule, what it reads, what it writes, and the prompt file's
+   text. Get a yes.
+2. Write the prompt files and create the scheduled tasks. `knowledge-graph-daily`
+   already has its prompt file; ask only its time.
+3. Run each routine once now (the scheduler's run-now, or `claude -p`) and read the
+   result. It must finish without waiting on a prompt and leave its output where
+   promised. The graph update must end with both `kb/kb build` and `kb/kb health` at
+   `RESULT: PASS` and a report in `notes/kb-updates/`. Fix and rerun until each is clean.
+4. Fill the `## Routines` section of `CLAUDE.md`: one bullet per routine with its id,
+   schedule, what it does, where its output lands and its prompt file, and one line on
+   how routines run here (for desktop tasks: the app must be open).
+
+---
+
+## Phase 11 - Wrap up
+
+1. Tell them what to do next, in a few lines:
    - Start a fresh session, because `CLAUDE.md` loads at session start and the
      current session is still running on the template.
    - Give the assistant a small real task and correct it. The first three
@@ -333,13 +456,15 @@ LC_ALL=C grep -n '[^ -~]' CLAUDE.md .claude/identity/*.md
    - Re-run `/setup voice` when more writing samples accumulate.
    - Delete `.claude/identity/examples/` if they want the repo lean, or keep it as
      a reference for the next revision.
+   - Which routines run when, and where their output lands. The first graph update
+     report will be in `notes/kb-updates/` after its next run.
 
-8. Ask once whether to commit. Do not commit unprompted, and do not add assistant
+2. Ask once whether to commit. Do not commit unprompted, and do not add assistant
    attribution or co-author trailers to the commit if they say yes.
 
 ---
 
-## Phase 9 - The standing invitation
+## Phase 12 - The standing invitation
 
 Last message. Tell them the identity files are meant to be edited, that the
 assistant is expected to update them when corrected, and that the fastest way to

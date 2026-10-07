@@ -1,0 +1,29 @@
+{
+  "_doc": "The assistant's knowledge graph vocabulary. The wiki-to-graph model (concept, fact, procedure, schema) plus one kind, judgment, and one edge, supersedes. What a page is about (a person, an organization, a project, a lane) is its `topics:` value, not a kind; how two pages connect is the reason written on a `related` link. Add a kind or edge type only when a real question cannot be answered without it, and say which question (kb/tools/wiki-to-graph/reference/custom-vocabulary.md, 'Before you extend it').",
+  "kinds": [
+    "concept",
+    "fact",
+    "procedure",
+    "schema",
+    "judgment"
+  ],
+  "concept_edges": [
+    "mentions",
+    "related",
+    "contradicts",
+    "cites",
+    "supersedes"
+  ],
+  "symmetric": [
+    "related",
+    "contradicts"
+  ],
+  "hub_edges": [
+    "indexes",
+    "records"
+  ],
+  "descriptions": {
+    "judgment": "a standing rule the assistant follows, usually learned from a correction",
+    "supersedes": "a newer page, file or decision replaces an older one; the unsuperseded one is current"
+  }
+}

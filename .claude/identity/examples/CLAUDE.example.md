@@ -69,6 +69,32 @@ Check what is actually connected before claiming you can reach something.
 - **CRM:** none. The funder pipeline lives in a spreadsheet at
   `Grants/current/pipeline.xlsx`, which is the system of record until that changes.
 
+## Knowledge graph
+
+What I know across sessions lives in the knowledge graph in `kb/`. The pages in
+`kb/wiki/` are the truth; `kb/build/` is derived.
+
+- **Search before answering** anything about a person, organization, project, or past
+  decision: `kb/kb search <words>`, then `kb/kb node <title>`. Skill:
+  `knowledge-graph`. Nothing found is reported as nothing found.
+- **Write back in the same turn** when a session turns up something durable. A
+  correction goes into the identity file and becomes a `judgment` page. Skill:
+  `knowledge-graph-maintain`. `kb/kb build` must end with `RESULT: PASS`.
+- **The viewer is private.** Served on 127.0.0.1 only, never published or uploaded.
+
+## Routines
+
+Scheduled runs of this assistant. Each one's instructions are in
+`.claude/routines/<id>.md`; they run in the desktop app while it is open, and a missed
+run fires at the next launch. None of them sends anything.
+
+- **knowledge-graph-daily**, 6:00am daily: last day's sessions, memory and file changes
+  into graph pages; report in `notes/kb-updates/`.
+- **morning-brief**, 6:10am weekdays: today's calendar, replies owed (drafted in
+  Outlook), deadlines this week; `notes/briefs/YYYY-MM-DD.md`.
+- **client-quiet-threads**, 6:20am Mondays: client threads with no reply in 7 days,
+  with a follow-up draft for each; `notes/briefs/`.
+
 ## Domain notes
 
 **Cedar Commons.** `Grants/current/` holds the canonical budget workbook, the

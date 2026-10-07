@@ -1,0 +1,3 @@
+#!/bin/sh
+# Launcher for kb.py. Uses python3; the graph tool needs only the standard library.
+exec python3 "$(cd "$(dirname "$0")" && pwd)/kb.py" "$@"

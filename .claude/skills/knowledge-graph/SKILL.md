@@ -13,7 +13,7 @@ page changed, so answers are never from a stale build.
 
 ```bash
 kb/kb search <words>                 # ranked keyword search over every page
-kb/kb node <title>                   # one page: summary, links in/out with reasons, file path
+kb/kb node <title>                   # one page: summary, every link in and out with its reason, file
 kb/kb list --topic People            # pages by topic; also --kind judgment, --type source
 ```
 
@@ -21,6 +21,10 @@ kb/kb list --topic People            # pages by topic; also --kind judgment, --t
 more than one match, pick the right one and run it again with the full title.
 
 ## Ask how things connect
+
+For one page's direct links, `node` is the clearest view. The queries below are for
+questions that span several hops; their output lists edge types and titles without the
+reasons, so read the pages they name with `node`.
 
 ```bash
 kb/kb query neighbors "<title>"      # everything one link away

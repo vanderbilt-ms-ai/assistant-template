@@ -107,8 +107,9 @@ def resolve(g, q):
             print("more than one page matches %r:" % q)
             for n in hits[:15]:
                 print("  ", n.get("title") or n["id"])
+            print("run it again with the full title")
             sys.exit(1)
-    print("no page matches %r. Try: kb/kb search %s" % (q, q)); sys.exit(1)
+    print("no page matches %r" % q); sys.exit(1)
 
 
 def tokens(s):
@@ -151,10 +152,24 @@ def cmd_search(a):
 def cmd_node(a):
     g = fresh()
     n = resolve(g, " ".join(a.title))
-    r = tool("query", GRAPH, "node", n["id"], "--vocab", VOCAB, capture=True)
-    print(r.stdout.rstrip())
-    if n.get("meta"):
-        print("meta:", json.dumps(n["meta"], ensure_ascii=False))
+    byid = {x["id"]: x for x in g["nodes"]}
+    name = lambda i: (byid.get(i) or {}).get("title") or i
+    print("%s  [%s]" % (n.get("title") or n["id"], n.get("kind") or n.get("type")))
+    if n.get("topics"):
+        print("topics:", ", ".join(n["topics"]))
+    if n.get("locator"):
+        print("locator:", n["locator"])
+    if n.get("summary"):
+        print(n["summary"])
+    out, inc = [], []
+    for e in g["links"]:
+        why = (" - " + e["context"]) if e.get("context") else ""
+        if e["source"] == n["id"]:
+            out.append("  %-10s -> %s%s" % (e["type"], name(e["target"]), why))
+        elif e["target"] == n["id"]:
+            inc.append("  %-10s <- %s%s" % (e["type"], name(e["source"]), why))
+    print("links out (%d):" % len(out)); print("\n".join(out) or "  none")
+    print("links in (%d):" % len(inc)); print("\n".join(inc) or "  none")
     if n.get("file"):
         print("file:", os.path.relpath(os.path.join(WIKI, n["file"])))
 
@@ -177,7 +192,22 @@ def cmd_query(a):
     sys.exit(tool("query", GRAPH, *a.rest, "--vocab", VOCAB))
 
 
+UPDATE_HELP = """kb/kb update <action> [options]   (edits kb/wiki/, then rebuilds)
+
+  add-source  --title T --locator PATH|URL [--medium M] [--date YYYY-MM-DD] [--author A] [--topics T]
+  add-node    --title T --kind concept|fact|procedure|schema|judgment [--topics T] [--summary S]
+  add-edge    --from A --to B --type related|cites|contradicts|mentions
+  remove-edge --from A --to B [--type T]
+  remove-node --node T
+  rename      --node OLD --title NEW        (rewrites every link to it)
+  set-kind    --node T --kind K
+  set-topics  --node T --topics T
+"""
+
+
 def cmd_update(a):
+    if not a.rest or a.rest[0] in ("-h", "--help") or "-h" in a.rest or "--help" in a.rest:
+        print(UPDATE_HELP); return
     ensure_wiki()
     rc = tool("update", WIKI, *a.rest, "--vocab", VOCAB)
     if rc == 0:
@@ -189,15 +219,14 @@ def cmd_update(a):
 
 def cmd_lint(a):
     ensure_wiki()
-    sys.exit(tool("lint", WIKI))
+    sys.exit(tool("lint", WIKI, "--vocab", VOCAB))
 
 
 def cmd_health(a):
     g = fresh()
     print("pages:", len(g["nodes"]), " links:", len(g["links"]))
-    for q in ("unexplained",):
-        r = tool("query", GRAPH, q, "--vocab", VOCAB, capture=True)
-        print(r.stdout.rstrip())
+    r = tool("query", GRAPH, "unexplained", "--vocab", VOCAB, capture=True)
+    print(r.stdout.strip())
     cites = {e["source"] for e in g["links"] if e["type"] == "cites"}
     inbound = set()
     for e in g["links"]:
@@ -214,6 +243,11 @@ def cmd_health(a):
     dangling = g.get("meta", {}).get("warnings", {}).get("dangling") or []
     print("links to pages that do not exist (%d): %s" % (
         len(dangling), "; ".join("%s -> %s" % tuple(d) for d in dangling[:20])))
+    unexplained = sum(1 for e in g["links"]
+                      if e["type"] not in ("indexes", "records", "cites", "mentions") and not e.get("context"))
+    problems = len(nosrc) + len(orphans) + len(dangling) + unexplained
+    print("RESULT: " + ("PASS" if not problems else "%d thing(s) to fix" % problems))
+    sys.exit(1 if problems else 0)
 
 
 def cmd_build(a):
@@ -246,6 +280,11 @@ def main():
     sp.add_parser("lint").set_defaults(f=cmd_lint)
     sp.add_parser("health").set_defaults(f=cmd_health)
     p = sp.add_parser("view"); p.add_argument("--open", action="store_true"); p.set_defaults(f=cmd_view)
+    # update and query pass their arguments straight to the graph tool; argparse would
+    # otherwise claim leading options such as --help or --edges for itself
+    if len(sys.argv) > 1 and sys.argv[1] in ("update", "query"):
+        a = argparse.Namespace(rest=sys.argv[2:])
+        return (cmd_update if sys.argv[1] == "update" else cmd_query)(a)
     a = ap.parse_args()
     a.f(a)
 

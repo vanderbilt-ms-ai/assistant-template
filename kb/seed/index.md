@@ -17,3 +17,5 @@ graph, its database and its viewer are rebuilt from them by `kb/kb build`.
 
 ## Sources
 - [[Operating contract]] - the identity file the standing rules come from
+- [[Principal profile]] - who the principal is; people pages cite it
+- [[Standing instructions]] - lanes, hard rules, platforms, systems of record

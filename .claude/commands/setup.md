@@ -321,8 +321,10 @@ here comes from answers already recorded in `.claude/setup/answers.md`.
 3. Link every page with a reason: each person to their lane and organization, each
    lane to its systems of record, each judgment to the lane it governs. Add each new
    page under the right heading in `kb/wiki/index.md`.
-   Cite the identity file each fact was written into (for example
-   `.claude/identity/user.md`), not `.claude/setup/answers.md`, which may be deleted.
+   Cite the identity file each fact was written into, using its exact path so the
+   citation links to its seed source page: `.claude/identity/user.md` (Principal
+   profile), `CLAUDE.md` (Standing instructions), `.claude/identity/operating.md`
+   (Operating contract). Never cite `.claude/setup/answers.md`; it may be deleted.
 4. Record only what they told you. Where they skipped, leave the page out rather than
    guess. No credentials, account numbers, IDs, or health details.
 5. `kb/kb build` must print `RESULT: PASS`, and `kb/kb health` should show no orphans
